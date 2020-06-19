@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering, XLMRobertaForQuestionAnswering, AdamW
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, AdamW, BertForQuestionAnswering
 import pandas as pd
 from utils import df2qas, build_data_iterator, Batch, tqdm
 from torch.utils.data import DataLoader
@@ -26,7 +26,7 @@ def evaluate(model: XLMRobertaForQuestionAnswering, iterator: DataLoader, args: 
     return total / len(iterator)
 
 
-def train_epoch(model: XLMRobertaForQuestionAnswering, optimizer: torch.optim.Optimizer, tr_iterator: DataLoader, ev_iterator: DataLoader,
+def train_epoch(model: BertForQuestionAnswering, optimizer: torch.optim.Optimizer, tr_iterator: DataLoader, ev_iterator: DataLoader,
                 args: TrainingArguments, writer: SummaryWriter, logger: logging.Logger, n: int):
     model.to(args.device)
     model.train()
