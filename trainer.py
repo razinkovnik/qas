@@ -70,7 +70,8 @@ def train_epoch(model: XLMRobertaForQuestionAnswering, optimizer: torch.optim.Op
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Обучение модели')
     parser.add_argument('--dataset_path', type=str, default="dataset/gold.csv", help='путь к датасету')
-    parser.add_argument('--model_path', type=str, default="xlm-mlm-xnli15-1024", help='модель')
+    parser.add_argument('--model', type=str, default="xlm-mlm-xnli15-1024", help='модель')
+    parser.add_argument('--load', help='загрузить модель', action='store_true')
     parser.add_argument('--output_dir', type=str, default="models", help='путь к модели')
     parser.add_argument('--train_data_size', type=float, default=0.95, help='относительный размер данных для тренировки')
     parser.add_argument('--train_batch_size', type=int, default=4, help='размер тренировочного батча')
@@ -92,8 +93,11 @@ if __name__ == "__main__":
     args.device = parser_args.device
 
     logging.basicConfig(level=logging.INFO)
-    tokenizer = AutoTokenizer.from_pretrained(parser_args.model_path)
-    model = AutoModelForQuestionAnswering.from_pretrained(parser_args.model_path)
+    tokenizer = AutoTokenizer.from_pretrained(parser_args.model)
+    if parser_args.load:
+        model = AutoModelForQuestionAnswering.from_pretrained(parser_args.output_dir)
+    else:
+        model = AutoModelForQuestionAnswering.from_pretrained(parser_args.model)
     df = pd.read_csv(parser_args.dataset_path)
     data = df2qas(df, tokenizer)
     data = [item for item in data if item.end < args.block_size - len(tokenizer.tokenize(item.question))]
