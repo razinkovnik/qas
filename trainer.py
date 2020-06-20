@@ -9,7 +9,7 @@ from args import TrainingArguments
 import argparse
 
 
-def evaluate(model: XLMRobertaForQuestionAnswering, iterator: DataLoader, args: TrainingArguments) -> float:
+def evaluate(model: BertForQuestionAnswering, iterator: DataLoader, args: TrainingArguments) -> float:
     model.eval()
     model.to(args.device)
     total = 0
