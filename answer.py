@@ -1,13 +1,12 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
-import pandas as pd
-from utils import df2qas
+import argparse
 
 
 def find_answer(context: str, question: str):
-    code = tokenizer.encode_plus(context, question, return_tensors="pt")
+    input_data = tokenizer.encode_plus(question, context, return_tensors="pt")
     with torch.no_grad():
-        out = model(code["input_ids"], token_type_ids=code["token_type_ids"], attention_mask=code["attention_mask"])
+        out = model(**input_data)
     start, end = out[0], out[1]
     start = torch.argmax(start).item()
     end = torch.argmax(end).item()
@@ -15,13 +14,15 @@ def find_answer(context: str, question: str):
 
 
 if __name__ == "__main__":
-    tokenizer = AutoTokenizer.from_pretrained("DeepPavlov/rubert-base-cased")
-    model = AutoModelForQuestionAnswering.from_pretrained("C:\\Users\\m31k0l2\\Google Диск\\quansw")
-    df = pd.read_csv("dataset/gold.csv")
-    data = df2qas(df, tokenizer)
-    context = data[-1].context
-    question = data[-1].question
-    answer = find_answer(context, question)
+    parser = argparse.ArgumentParser(description='Обучение модели')
+    parser.add_argument('--model', type=str, default="DeepPavlov/rubert-base-cased", help='модель')
+    parser.add_argument('--model_dir', type=str, default="models", help='путь к модели')
+    parser.add_argument('--context', type=str)
+    parser.add_argument('--question', type=str)
+    args = parser.parse_args()
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    model = AutoModelForQuestionAnswering.from_pretrained(args.model_dir)
+    answer = find_answer(args.context, args.question)
     print(context)
     print("="*10)
     print(question)
