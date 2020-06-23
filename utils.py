@@ -90,6 +90,7 @@ def setup() -> TrainingArguments:
     parser.add_argument('--save_steps', type=int, default=100, help='шаг сохранения')
     parser.add_argument('--lr', type=float, default=5e-5)
     parser.add_argument('--device', type=str, default="cuda")
+    parser.add_argument('--writer', action='store_true')
     parser_args = parser.parse_args()
     args.model_name = parser_args.model
     args.train_dataset = parser_args.train_dataset
@@ -103,4 +104,6 @@ def setup() -> TrainingArguments:
     args.test_batch_size = parser_args.test_batch_size
     args.output_dir = parser_args.output_dir
     args.num_train_epochs = parser_args.num_train_epochs
+    if parser_args.writer:
+        args.writer = "runs"
     return args

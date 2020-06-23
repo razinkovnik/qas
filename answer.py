@@ -3,14 +3,14 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 import argparse
 
 
-def find_answer(context: str, question: str):
+def find_answer(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering, context: str, question: str):
     input_data = tokenizer.encode_plus(question, context, return_tensors="pt")
     with torch.no_grad():
         out = model(**input_data)
     start, end = out[0], out[1]
     start = torch.argmax(start).item()
     end = torch.argmax(end).item()
-    return tokenizer.decode(tokenizer.encode(context)[start:end])
+    return tokenizer.decode(tokenizer.encode(question, context)[start:end])
 
 
 if __name__ == "__main__":
@@ -22,8 +22,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForQuestionAnswering.from_pretrained(args.model_dir)
-    answer = find_answer(args.context, args.question)
-    print(context)
-    print("="*10)
-    print(question)
-    print(answer)
+    model.eval()
+    print(find_answer(tokenizer, model, args.context, args.question))
