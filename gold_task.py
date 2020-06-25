@@ -1,5 +1,5 @@
 import json
-from transformers import BertTokenizer, AdamW, BertForQuestionAnswering
+from transformers import BertTokenizer, BertForQuestionAnswering
 import torch
 from typing import List, Dict
 from args import TrainingArguments
@@ -53,16 +53,6 @@ def load_data(filename: str, tokenizer: BertTokenizer, batch_size: int, args: Tr
 
 if __name__ == "__main__":
     args = setup()
-    tokenizer = BertTokenizer.from_pretrained(args.model_name)
-    tr_iterator = load_data(args.train_dataset, tokenizer, args.train_batch_size, args)
-    ev_iterator = load_data(args.test_dataset, tokenizer, args.test_batch_size, args)
-    if args.load:
-        model = BertForQuestionAnswering.from_pretrained(args.output_dir)
-    else:
-        model = BertForQuestionAnswering.from_pretrained(args.model_name)
-    model.to(args.device)
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate)
-    for n in range(args.num_train_epochs):
-        train_epoch(model, optimizer, tr_iterator, args, n)
-        loss = evaluate(model, ev_iterator)
-        logger.info(f"eval: {loss}")
+    tokenizer, model, optimizer = init_model(BertForQuestionAnswering, args)
+    train(tokenizer, model, optimizer, load_data, args)
+

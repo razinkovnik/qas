@@ -2,8 +2,8 @@ from collections import namedtuple
 from tqdm import tqdm as tqdm_base
 import logging
 from torch.utils.data import Dataset, DataLoader, RandomSampler
-from transformers import BertPreTrainedModel
-from typing import List, Callable, Dict
+from transformers import BertPreTrainedModel, BertTokenizer, AdamW
+from typing import List, Callable, Dict, Tuple
 from args import TrainingArguments
 import torch
 import argparse
@@ -75,10 +75,21 @@ def train_epoch(model: BertPreTrainedModel, optimizer: torch.optim.Optimizer, it
     model.save_pretrained(args.output_dir)
 
 
+def train(tokenizer: BertTokenizer, model: BertPreTrainedModel, optimizer: torch.optim.Optimizer,
+          load_data: Callable[[str, BertTokenizer, int, TrainingArguments], DataLoader], args: TrainingArguments):
+    tr_iterator = load_data(args.train_dataset, tokenizer, args.train_batch_size, args)
+    ev_iterator = load_data(args.test_dataset, tokenizer, args.test_batch_size, args)
+    for n in range(args.num_train_epochs):
+        train_epoch(model, optimizer, tr_iterator, args, n)
+        loss = evaluate(model, ev_iterator)
+        logger.info(f"eval: {loss}")
+
+
 def setup() -> TrainingArguments:
     args = TrainingArguments()
     parser = argparse.ArgumentParser(description='Обучение модели')
-    parser.add_argument('--train_dataset', default="dataset/tydiqa.json", type=str, help='путь к тренировочному датасету')
+    parser.add_argument('--train_dataset', default="dataset/tydiqa.json", type=str,
+                        help='путь к тренировочному датасету')
     parser.add_argument('--test_dataset', default="dataset/tydiqa.json", type=str, help='путь к тестовому датасету')
     parser.add_argument('--model', type=str, default="bert-base-multilingual-cased", help='модель')
     parser.add_argument('--load', help='загрузить модель', action='store_true')
@@ -107,3 +118,11 @@ def setup() -> TrainingArguments:
     if parser_args.writer:
         args.writer = "runs"
     return args
+
+
+def init_model(model_type: type, args: TrainingArguments) \
+        -> Tuple[BertTokenizer, BertPreTrainedModel, torch.optim.Optimizer]:
+    tokenizer = BertTokenizer.from_pretrained(args.model_name)
+    model: BertPreTrainedModel = model_type.from_pretrained(args.output_dir if args.load else args.model_name)
+    optimizer = AdamW(model.parameters(), lr=args.learning_rate)
+    return tokenizer, model.to(args.device), optimizer
