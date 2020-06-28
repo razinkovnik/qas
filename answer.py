@@ -1,9 +1,9 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+from transformers import BertTokenizer, BertForQuestionAnswering
 import argparse
 
 
-def find_answer(tokenizer: AutoTokenizer, model: AutoModelForQuestionAnswering, context: str, question: str):
+def find_answer(tokenizer: BertTokenizer, model: BertForQuestionAnswering, context: str, question: str):
     input_data = tokenizer.encode_plus(question, context, return_tensors="pt")
     with torch.no_grad():
         out = model(**input_data)
@@ -21,6 +21,6 @@ if __name__ == "__main__":
     parser.add_argument('--question', type=str)
     args = parser.parse_args()
     tokenizer = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModelForQuestionAnswering.from_pretrained(args.model_dir)
+    model = BertForQuestionAnswering.from_pretrained(args.model_dir)
     model.eval()
     print(find_answer(tokenizer, model, args.context, args.question))
