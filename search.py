@@ -20,13 +20,13 @@ def search_context(tfidf, tokenizer: BertTokenizer, model: BertForNextSentencePr
 
 def get_answer(tokenizer, models, question):
     tfidf, parag_model, answer_model = models
-    n = search_context(model, tokenizer, parag_model, df.texts, question)
-    context = df.texts[n]
+    n_doc = search_context(model, tokenizer, parag_model, df.texts, question)
+    context = df.texts[n_doc]
     scores, parags = find_paragraph(tokenizer, parag_model, q, context)
     n = scores.argmax()
     context = parags[n]
-    answer = find_answer(tokenizer, answer_model, q, context)
-    return answer
+    answer = find_answer(tokenizer, answer_model, question, context)
+    return answer, n_doc
 
 
 if __name__ == "__main__":
@@ -40,5 +40,6 @@ if __name__ == "__main__":
 
     q = df.questions[3]
     print(q)
-    answer = get_answer(tokenizer, (model, parag_model, answer_model), q)
+    answer, n_doc = get_answer(tokenizer, (model, parag_model, answer_model), q)
+    print(df.titles[n_doc])
     print(answer)
