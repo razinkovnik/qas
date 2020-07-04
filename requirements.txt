@@ -1,5 +1,5 @@
+numba
 nltk
-hnswlib
 numpy
 tqdm
 torch

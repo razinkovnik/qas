@@ -1,5 +1,3 @@
-# %%
-
 from typing import BinaryIO
 from transformers import BertTokenizer, BertModel
 from primary_task import read_data
@@ -9,38 +7,33 @@ import math
 from tqdm import tqdm
 import pandas as pd
 
-data = read_data("dataset/test.jsonl")
 
-# %%
-queries = []
-docs = []
-done = []
-indexes = []
-for item in data:
-    if item['document_plaintext'] not in done:
-        parts = [part for part in item['document_plaintext'].strip().split('\n') if len(part) > 50]
-        indexes += [len(done)] * len(parts)
-        queries += [item['question_text']]
+def setup_and_save(datafile_name, save_dir):
+    df = pd.read_csv(datafile_name)
+    docs = []
+    indexes = []
+    for i, text in enumerate(df.texts.to_list()):
+        parts = [part for part in text.strip().split('\n') if len(part) > 50]
+        indexes += [i] * len(parts)
         docs += parts
-        done += [item['document_plaintext']]
+    batch_size = 32
+    texts = [[doc for doc in docs[i*batch_size:(i+1)*batch_size]] for i in range(math.ceil(len(docs)/batch_size))]
 
-# %%
-tokenizer = BertTokenizer.from_pretrained("DeepPavlov/rubert-base-cased")
-model = BertModel.from_pretrained("DeepPavlov/rubert-base-cased")
-model.eval()
-model.cuda()
+    tokenizer = BertTokenizer.from_pretrained("DeepPavlov/rubert-base-cased")
+    model = BertModel.from_pretrained("DeepPavlov/rubert-base-cased")
+    model.eval()
+    model.cuda()
+    vectors = []
+    for batch in tqdm(texts):
+        batch = tokenizer.batch_encode_plus(batch, max_length=32, truncation=True, pad_to_max_length=True, return_tensors="pt").to("cuda")
+        with torch.no_grad():
+            out = model(**batch)[0]
+        out = out.cpu().numpy()
+        vectors.append(np.average(out, axis=1))
+    vectors = np.vstack(vectors)
+    np.save('dataset/vectors.npy', vectors)
+    np.save('dataset/indexes.npy', np.array(indexes))
 
-batch_size = 32
-texts = [[doc for doc in docs[i*batch_size:(i+1)*batch_size]] for i in range(math.ceil(len(docs)/batch_size))]
-
-vectors = []
-for batch in tqdm(texts):
-    batch = tokenizer.batch_encode_plus(batch, max_length=32, truncation=True, pad_to_max_length=True, return_tensors="pt").to("cuda")
-    with torch.no_grad():
-        out = model(**batch)[0]
-    out = out.cpu().numpy()
-    vectors.append(np.average(out, axis=1))
-vectors = np.vstack(vectors)
 
 
 def test(test_n: int) -> int:
@@ -54,12 +47,3 @@ def test(test_n: int) -> int:
     predicts = list(dict.fromkeys([indexes[p] for p in predicts]))
     return predicts.index(test_n)
 
-
-result = sum([test(i) for i in range(len(queries))]) / len(queries)
-print(result)
-
-np.save('vectors.npy', vectors)
-np.save('indexes.npy', np.array(indexes))
-df = pd.DataFrame({"docs": done, "questions": queries})
-df.to_csv("dataset/docs.csv")
-# vectors = np.load('vectors.npy')
