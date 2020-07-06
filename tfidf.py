@@ -77,9 +77,10 @@ def search(model, query):
 
 
 if __name__ == "__main__":
-    index = index_docs(pd.read_csv("dataset/data.csv"))
-    index.to_csv("dataset/index.csv")
+    df = pd.read_csv("dataset/wiki.csv")
+    # index = index_docs(pd.read_csv("dataset/wiki.csv"))
+    # index.to_csv("dataset/index.csv")
 
-    setup_and_save("dataset")
-    print("Модель обучена")
+    # setup_and_save("dataset")
+    # print("Модель обучена")
 

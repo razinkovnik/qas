@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from transformers import BertTokenizer, BertForNextSentencePrediction, BertForQuestionAnswering
+from transformers import BertTokenizer, BertForNextSentencePrediction, BertForQuestionAnswering, BertForSequenceClassification
 from typing import List, Tuple
 import pandas as pd
 
@@ -64,3 +64,23 @@ def find_answer(tokenizer: BertTokenizer, answer_model: BertForQuestionAnswering
             end_pos = e_pos
     return tokenizer.decode(tokenizer.encode(query, text)[start_pos:end_pos])
 
+
+def get_question_type(tokenizer: BertTokenizer, question_model: BertForSequenceClassification, question: str) -> str:
+    input_ids = tokenizer.encode(question, return_tensors="pt")
+    with torch.no_grad():
+        out = question_model(input_ids)[0]
+    a, b = out.tolist()[0]
+    return "YESNO" if b > a else "SPAN"
+
+
+def find_yesno_answer(tokenizer: BertTokenizer, question_model: BertForSequenceClassification, question: str, text: str) -> str:
+    input_ids = tokenizer.encode_plus(question, text, return_tensors="pt")
+    with torch.no_grad():
+        out = question_model(**input_ids)[0]
+    no, yes, none = torch.softmax(out, dim=1).tolist()[0]
+    if none > 0.5:
+        return "не знаю"
+    elif no > yes:
+        return "нет"
+    else:
+        return "да"

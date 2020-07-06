@@ -88,10 +88,10 @@ def train(tokenizer: BertTokenizer, model: BertPreTrainedModel, optimizer: torch
 def setup() -> TrainingArguments:
     args = TrainingArguments()
     parser = argparse.ArgumentParser(description='Обучение модели')
-    parser.add_argument('--train_dataset', default="dataset/tydiqa.json", type=str,
+    parser.add_argument('--train_dataset', default="", type=str,
                         help='путь к тренировочному датасету')
-    parser.add_argument('--test_dataset', default="dataset/tydiqa.json", type=str, help='путь к тестовому датасету')
-    parser.add_argument('--model', type=str, default="bert-base-multilingual-cased", help='модель')
+    parser.add_argument('--test_dataset', default="", type=str, help='путь к тестовому датасету')
+    parser.add_argument('--model', type=str, default="DeepPavlov/rubert-base-cased", help='модель')
     parser.add_argument('--load', help='загрузить модель', action='store_true')
     parser.add_argument('--output_dir', type=str, default="models", help='путь к модели')
     parser.add_argument('--train_batch_size', type=int, default=4, help='размер тренировочного батча')
@@ -120,9 +120,11 @@ def setup() -> TrainingArguments:
     return args
 
 
-def init_model(model_type: type, args: TrainingArguments) \
+def init_model(model_type: type, args: TrainingArguments, labels=None) \
         -> Tuple[BertTokenizer, BertPreTrainedModel, torch.optim.Optimizer]:
     tokenizer = BertTokenizer.from_pretrained(args.model_name)
-    model: BertPreTrainedModel = model_type.from_pretrained(args.output_dir if args.load else args.model_name)
+    model_path = args.output_dir if args.load else args.model_name
+    model: BertPreTrainedModel = model_type.from_pretrained(model_path, num_labels=labels) if labels \
+        else model_type.from_pretrained(model_path)
     optimizer = AdamW(model.parameters(), lr=args.learning_rate)
     return tokenizer, model.to(args.device), optimizer
